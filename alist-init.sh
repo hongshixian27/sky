@@ -2,8 +2,7 @@
 set -eu
 
 if [ -z "${ALIST_ADMIN_PASSWORD:-}" ]; then
-  echo "[ALIST] ALIST_ADMIN_PASSWORD is empty; keeping generated password"
-  exit 0
+  exit 1
 fi
 
 attempt=0
@@ -18,4 +17,10 @@ done
 
 cd /opt/alist
 /opt/alist/alist admin set "$ALIST_ADMIN_PASSWORD" >/dev/null
-echo "[ALIST] administrator password initialized"
+
+if [ -n "${ALIST_BACKUP_KEY:-}" ]; then
+  /usr/local/bin/alist-bootstrap
+  # The exported backup intentionally contains no passwords. Force the
+  # administrator password from Koyeb Secret after every restore and restart.
+  /opt/alist/alist admin set "$ALIST_ADMIN_PASSWORD" >/dev/null
+fi

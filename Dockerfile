@@ -1,3 +1,9 @@
+FROM golang:1.25-bookworm AS bootstrap-builder
+
+WORKDIR /src
+COPY alist-bootstrap.go .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /alist-bootstrap ./alist-bootstrap.go
+
 FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,6 +33,8 @@ RUN mkdir -p /app /etc/supervisor/conf.d /var/log \
       /var/lib/tailscale /var/run/tailscale
 
 COPY config.json /app/config.json
+COPY alist-backup.enc /app/alist-backup.enc
+COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN nginx -t
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
