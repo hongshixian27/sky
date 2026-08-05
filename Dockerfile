@@ -2,7 +2,9 @@ FROM golang:1.25-bookworm AS bootstrap-builder
 
 WORKDIR /src
 COPY alist-bootstrap.go .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /alist-bootstrap ./alist-bootstrap.go
+COPY huawei-proxy.go .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /alist-bootstrap ./alist-bootstrap.go \
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /huawei-proxy ./huawei-proxy.go
 
 FROM debian:bookworm-slim
 
@@ -35,6 +37,7 @@ RUN mkdir -p /app /etc/supervisor/conf.d /var/log \
 COPY config.json /app/config.json
 COPY alist-backup.enc /app/alist-backup.enc
 COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
+COPY --from=bootstrap-builder /huawei-proxy /usr/local/bin/huawei-proxy
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN nginx -t
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
