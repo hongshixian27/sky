@@ -125,7 +125,7 @@ func (c *client) restore(b *backup) error {
 	settings := make([]map[string]any, 0, len(b.Settings))
 	for _, item := range b.Settings {
 		key, _ := item["key"].(string)
-		if key != "version" && key != "index_progress" {
+		if key != "version" && key != "index_progress" && key != "default_role" {
 			settings = append(settings, item)
 		}
 	}
