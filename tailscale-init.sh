@@ -7,10 +7,10 @@ if [ -z "${TS_AUTHKEY:-}" ]; then
 fi
 
 attempt=0
-until tailscale status >/dev/null 2>&1; do
+until [ -S /var/run/tailscale/tailscaled.sock ]; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 60 ]; then
-    echo "[TAILSCALE] tailscaled unavailable"
+    echo "[TAILSCALE] tailscaled socket unavailable"
     exit 1
   fi
   sleep 1
