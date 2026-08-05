@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "info"
+    "level": "error"
   },
   "inbounds": [
     {
@@ -21,18 +21,11 @@
   ],
   "outbounds": [
     {
-      "type": "socks",
-      "tag": "warp",
-      "server": "127.0.0.1",
-      "server_port": 40000,
-      "version": "5"
-    },
-    {
       "type": "direct",
       "tag": "direct"
     }
   ],
   "route": {
-    "final": "__EGRESS__"
+    "final": "direct"
   }
 }
