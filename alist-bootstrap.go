@@ -133,7 +133,21 @@ func (c *client) restore(b *backup) error {
 		return fmt.Errorf("restore settings: %w", err)
 	}
 
-	if err := c.upsertPage("/admin/storage/list?page=1&per_page=1000", "/admin/storage", "mount_path", b.Storages, false); err != nil {
+	storages := make([]map[string]any, 0, len(b.Storages))
+	for _, source := range b.Storages {
+		item := make(map[string]any, len(source))
+		for key, value := range source {
+			item[key] = value
+		}
+		if driver, _ := item["driver"].(string); strings.EqualFold(driver, "GoogleDrive") {
+			// Keep Google Drive downloads on the Koyeb/AList data path. An empty
+			// proxy URL means AList itself is the download proxy.
+			item["web_proxy"] = true
+			item["down_proxy_url"] = ""
+		}
+		storages = append(storages, item)
+	}
+	if err := c.upsertPage("/admin/storage/list?page=1&per_page=1000", "/admin/storage", "mount_path", storages, false); err != nil {
 		return fmt.Errorf("restore storages: %w", err)
 	}
 	if err := c.upsertPage("/admin/meta/list?page=1&per_page=1000", "/admin/meta", "path", b.Metas, false); err != nil {
