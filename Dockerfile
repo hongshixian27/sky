@@ -3,8 +3,10 @@ FROM golang:1.25-bookworm AS bootstrap-builder
 WORKDIR /src
 COPY alist-bootstrap.go .
 COPY huawei-proxy.go .
+COPY request-cache.go .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /alist-bootstrap ./alist-bootstrap.go \
-    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /huawei-proxy ./huawei-proxy.go
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /huawei-proxy ./huawei-proxy.go \
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /request-cache ./request-cache.go
 
 FROM debian:bookworm-slim
 
@@ -38,6 +40,7 @@ COPY config.json /app/config.json
 COPY alist-backup.enc /app/alist-backup.enc
 COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
 COPY --from=bootstrap-builder /huawei-proxy /usr/local/bin/huawei-proxy
+COPY --from=bootstrap-builder /request-cache /usr/local/bin/request-cache
 COPY nginx.conf /etc/nginx/nginx.conf.template
 RUN cp /etc/nginx/nginx.conf.template /etc/nginx/nginx.conf && nginx -t
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
