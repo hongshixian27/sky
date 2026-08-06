@@ -38,8 +38,8 @@ COPY config.json /app/config.json
 COPY alist-backup.enc /app/alist-backup.enc
 COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
 COPY --from=bootstrap-builder /huawei-proxy /usr/local/bin/huawei-proxy
-COPY nginx.conf /etc/nginx/nginx.conf
-RUN nginx -t
+COPY nginx.conf /etc/nginx/nginx.conf.template
+RUN cp /etc/nginx/nginx.conf.template /etc/nginx/nginx.conf && nginx -t
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
 COPY tailscale-init.sh /usr/local/bin/tailscale-init.sh
