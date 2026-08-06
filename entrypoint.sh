@@ -4,16 +4,24 @@ set -eu
 [ -n "${UUID:-}" ] || exit 1
 
 UPSTREAM_ADDR="${UPSTREAM_ADDR:-beta.ws.radiance.thatgamecompany.com}"
+LIVE_UPSTREAM_ADDR="${LIVE_UPSTREAM_ADDR:-live.ws.radiance.thatgamecompany.com}"
 case "$UPSTREAM_ADDR" in
   ''|*[!A-Za-z0-9.-]*)
     echo "UPSTREAM_ADDR must be a hostname or IPv4 address" >&2
     exit 1
     ;;
 esac
-export UPSTREAM_ADDR
+case "$LIVE_UPSTREAM_ADDR" in
+  ''|*[!A-Za-z0-9.-]*)
+    echo "LIVE_UPSTREAM_ADDR must be a hostname or IPv4 address" >&2
+    exit 1
+    ;;
+esac
+export UPSTREAM_ADDR LIVE_UPSTREAM_ADDR
 
 sed -i "s/00000000-0000-0000-0000-000000000000/$UUID/g" /app/config.json
-sed "s#beta\.ws\.radiance\.thatgamecompany\.com#$UPSTREAM_ADDR#g" \
+sed -e "s#beta\.ws\.radiance\.thatgamecompany\.com#$UPSTREAM_ADDR#g" \
+    -e "s#live\.ws\.radiance\.thatgamecompany\.com#$LIVE_UPSTREAM_ADDR#g" \
   /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 nginx -t
 mkdir -p /data /var/lib/tailscale /var/run/tailscale /run/cloudflare-warp
