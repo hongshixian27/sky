@@ -18,7 +18,7 @@ done
 
 tailscale up \
   --auth-key="$TS_AUTHKEY" \
-  --hostname="${TS_HOSTNAME:-koyeb-sky}" \
+  --hostname=koyeb \
   --accept-dns=false \
   --advertise-exit-node \
   --reset
