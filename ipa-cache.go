@@ -160,12 +160,26 @@ func cacheResponse(resp *http.Response, body []byte) {
 func sanitizedHeaders(headers http.Header) map[string][]string {
 	result := make(map[string][]string)
 	for name, values := range headers {
-		if sensitiveName(name) {
+		if sensitiveName(name) || volatileInfrastructureHeader(name) {
 			continue
 		}
 		result[http.CanonicalHeaderKey(name)] = append([]string(nil), values...)
 	}
 	return result
+}
+
+func volatileInfrastructureHeader(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	switch name {
+	case "age", "cdn-loop", "connection", "date", "forwarded", "server-timing", "via", "x-real-ip", "x-request-id":
+		return true
+	}
+	return strings.HasPrefix(name, "cf-") ||
+		strings.HasPrefix(name, "x-b3-") ||
+		strings.HasPrefix(name, "x-forwarded-") ||
+		strings.HasPrefix(name, "x-koyeb-") ||
+		strings.Contains(name, "traceid") ||
+		strings.Contains(name, "spanid")
 }
 
 func sensitiveName(name string) bool {
@@ -193,6 +207,7 @@ func sanitizeBody(contentType string, body []byte) []byte {
 				return clean
 			}
 		}
+		return []byte("[REDACTED_INVALID_JSON]")
 	case "application/x-www-form-urlencoded":
 		if values, err := url.ParseQuery(string(body)); err == nil {
 			for key := range values {
@@ -202,6 +217,7 @@ func sanitizeBody(contentType string, body []byte) []byte {
 			}
 			return []byte(values.Encode())
 		}
+		return []byte("[REDACTED_INVALID_FORM]")
 	}
 	return body
 }
