@@ -2,7 +2,6 @@
 set -eu
 
 [ -n "${UUID:-}" ] || exit 1
-[ -n "${TCP_UUID:-}" ] || exit 1
 
 UPSTREAM_ADDR="${UPSTREAM_ADDR:-beta.ws.radiance.thatgamecompany.com}"
 LIVE_UPSTREAM_ADDR="${LIVE_UPSTREAM_ADDR:-live.ws.radiance.thatgamecompany.com}"
@@ -21,7 +20,6 @@ esac
 export UPSTREAM_ADDR LIVE_UPSTREAM_ADDR
 
 sed -i "s/00000000-0000-0000-0000-000000000000/$UUID/g" /app/config.json
-sed -i "s/22222222-2222-2222-2222-222222222222/$TCP_UUID/g" /app/config.json
 sed -e "s#beta\.ws\.radiance\.thatgamecompany\.com#$UPSTREAM_ADDR#g" \
     -e "s#live\.ws\.radiance\.thatgamecompany\.com#$LIVE_UPSTREAM_ADDR#g" \
   /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
