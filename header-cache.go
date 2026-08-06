@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -28,18 +30,39 @@ type headerRecord struct {
 }
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/cache", cacheHandler)
+	upstreamHost := os.Getenv("UPSTREAM_ADDR")
+	if upstreamHost == "" {
+		panic("UPSTREAM_ADDR is required")
+	}
+	target := &url.URL{Scheme: "https", Host: upstreamHost + ":443"}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = upstreamHost
+	}
+	proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, _ error) {
+		http.Error(w, "upstream unavailable", http.StatusBadGateway)
+	}
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/account/ws" {
+			http.NotFound(w, req)
+			return
+		}
+		cacheHeaders(req)
+		proxy.ServeHTTP(w, req)
+	})
 	server := &http.Server{
 		Addr:              listenAddr,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       30 * time.Second,
 	}
 	panic(server.ListenAndServe())
 }
 
-func cacheHandler(w http.ResponseWriter, req *http.Request) {
+func cacheHeaders(req *http.Request) {
 	headers := sanitizedHeaders(req.Header)
 	content := struct {
 		Path    string
@@ -54,7 +77,6 @@ func cacheHandler(w http.ResponseWriter, req *http.Request) {
 		Headers:     content.Headers,
 	}
 	_ = appendUnique(record)
-	w.WriteHeader(http.StatusNoContent)
 }
 
 func sanitizedHeaders(headers http.Header) map[string][]string {
