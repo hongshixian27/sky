@@ -30,9 +30,9 @@ fi
 # AList needs its own base URL in order to generate correct asset, API, and
 # locally proxied download links when it is served from /alist/.
 config_changed=0
-if [ -f /data/config.json ] && ! grep -Eq '"site_url"[[:space:]]*:[[:space:]]*"/alist"' /data/config.json; then
-  sed -i 's#"site_url"[[:space:]]*:[[:space:]]*"[^"]*"#"site_url": "/alist"#' /data/config.json
-  if grep -Eq '"site_url"[[:space:]]*:[[:space:]]*"/alist"' /data/config.json; then
+if [ -f /data/config.json ] && ! grep -Eq '"site_url"[[:space:]]*:[[:space:]]*"https://koyeb\.idkwhn\.ccwu\.cc/alist"' /data/config.json; then
+  sed -i 's#"site_url"[[:space:]]*:[[:space:]]*"[^"]*"#"site_url": "https://koyeb.idkwhn.ccwu.cc/alist"#' /data/config.json
+  if grep -Eq '"site_url"[[:space:]]*:[[:space:]]*"https://koyeb\.idkwhn\.ccwu\.cc/alist"' /data/config.json; then
     config_changed=1
   fi
 fi
