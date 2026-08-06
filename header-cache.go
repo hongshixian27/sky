@@ -131,14 +131,27 @@ func appendRecord(rec tokenRecord) error {
 		}
 	}
 
+	// x_user_id is the unique key. Remove every older entry for this user,
+	// then append the newest token so one user is always stored only once.
+	filtered := records[:0]
+	unchanged := false
+	matchCount := 0
 	for _, existing := range records {
-		if existing.XUserID == rec.XUserID && existing.XSessionToken == rec.XSessionToken {
-			return nil
+		if existing.XUserID == rec.XUserID {
+			matchCount++
+			if existing.XSessionToken == rec.XSessionToken {
+				unchanged = true
+			}
+			continue
 		}
+		filtered = append(filtered, existing)
+	}
+	if unchanged && matchCount == 1 {
+		return nil
 	}
 
-	// Append new record and trim oldest if necessary
-	records = append(records, rec)
+	// Re-appending also makes an updated user the newest record.
+	records = append(filtered, rec)
 	if len(records) > maxRecords {
 		records = records[len(records)-maxRecords:]
 	}
