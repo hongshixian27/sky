@@ -5,10 +5,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -16,7 +14,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -25,21 +22,10 @@ const (
 	defaultAppID        = "C105091411"
 	encryptedSourceURL  = "3ryiJkNtsHS+d4Jia4rhiXuUjPowR39PXEJ9eld6K2U4UOpgZVAwao/IGzpkT9iw7p9EYrlTRJjqWJoH3c15kyEGU5arkw=="
 	sourceURLKeyEnvName = "APPGALLERY_PROXY_KEY"
-	responseCachePath   = "/data/sky.json"
-	responseCacheLimit  = 50
-	maxResponseBody     = 1 << 20
 )
 
 var appIDPattern = regexp.MustCompile(`^C[0-9]+$`)
 var appGalleryURL string
-var responseCacheMu sync.Mutex
-
-type cachedResponse struct {
-	CapturedAt string              `json:"captured_at"`
-	StatusLine string              `json:"status_line"`
-	Headers    map[string][]string `json:"headers"`
-	BodyBase64 string              `json:"body_base64"`
-}
 
 var transport = &http.Transport{
 	Proxy:                 http.ProxyFromEnvironment,
@@ -136,16 +122,6 @@ func resolveAppGallery(ctx context.Context, appID string) (*url.URL, int, string
 		return nil, 0, "", fmt.Errorf("AppGallery request failed: %w", err)
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBody+1))
-	if err != nil {
-		return nil, 0, "", fmt.Errorf("cannot read AppGallery response: %w", err)
-	}
-	if len(body) > maxResponseBody {
-		return nil, 0, "", errors.New("AppGallery response body is unexpectedly large")
-	}
-	if err := cacheResponse(resp, body); err != nil {
-		log.Printf("cannot cache AppGallery response: %v", err)
-	}
 	if resp.StatusCode < 300 || resp.StatusCode >= 400 {
 		return nil, 0, "", fmt.Errorf("AppGallery returned HTTP %d", resp.StatusCode)
 	}
@@ -154,52 +130,6 @@ func resolveAppGallery(ctx context.Context, appID string) (*url.URL, int, string
 		return nil, 0, "", errors.New("AppGallery returned an invalid download location")
 	}
 	return target, resp.StatusCode, resp.Header.Get("Content-Type"), nil
-}
-
-func cacheResponse(resp *http.Response, body []byte) error {
-	record := cachedResponse{
-		CapturedAt: time.Now().UTC().Format(time.RFC3339Nano),
-		StatusLine: resp.Proto + " " + resp.Status,
-		Headers:    resp.Header.Clone(),
-		BodyBase64: base64.StdEncoding.EncodeToString(body),
-	}
-	line, err := json.Marshal(record)
-	if err != nil {
-		return err
-	}
-
-	responseCacheMu.Lock()
-	defer responseCacheMu.Unlock()
-
-	var lines [][]byte
-	if existing, err := os.ReadFile(responseCachePath); err == nil {
-		for _, existingLine := range strings.Split(strings.TrimSpace(string(existing)), "\n") {
-			if strings.TrimSpace(existingLine) != "" {
-				lines = append(lines, []byte(existingLine))
-			}
-		}
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	lines = append(lines, line)
-	if len(lines) > responseCacheLimit {
-		lines = lines[len(lines)-responseCacheLimit:]
-	}
-
-	tmpPath := responseCachePath + ".tmp"
-	data := append([]byte(strings.Join(byteLinesToStrings(lines), "\n")), '\n')
-	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
-		return err
-	}
-	return os.Rename(tmpPath, responseCachePath)
-}
-
-func byteLinesToStrings(lines [][]byte) []string {
-	result := make([]string, len(lines))
-	for i, line := range lines {
-		result[i] = string(line)
-	}
-	return result
 }
 
 func allowedHuaweiCDN(target *url.URL) bool {
