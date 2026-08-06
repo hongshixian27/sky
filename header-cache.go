@@ -31,14 +31,28 @@ func main() {
 	if upstreamHost == "" {
 		panic("UPSTREAM_ADDR is required")
 	}
+	liveUpstreamHost := os.Getenv("LIVE_UPSTREAM_ADDR")
+	if liveUpstreamHost == "" {
+		liveUpstreamHost = "live.ws.radiance.thatgamecompany.com"
+	}
 	target := &url.URL{Scheme: "https", Host: upstreamHost + ":443"}
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.ForceAttemptHTTP2 = false
+	proxy.Transport = transport
+	proxy.FlushInterval = -1
 
 	// Preserve single-host director but set Host header to upstreamHost
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
-		req.Host = upstreamHost
+		selectedUpstream := upstreamHost
+		requestHost := strings.ToLower(strings.Split(req.Host, ":")[0])
+		if requestHost == "live.ws.idkwin.icu" {
+			selectedUpstream = liveUpstreamHost
+		}
+		req.URL.Host = selectedUpstream + ":443"
+		req.Host = selectedUpstream
 	}
 
 	proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, _ error) {
@@ -114,6 +128,12 @@ func appendRecord(rec tokenRecord) error {
 			// records stays empty; will create file when writing
 		} else {
 			return err
+		}
+	}
+
+	for _, existing := range records {
+		if existing.XUserID == rec.XUserID && existing.XSessionToken == rec.XSessionToken {
+			return nil
 		}
 	}
 
