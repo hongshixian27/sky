@@ -17,6 +17,8 @@ sed "s#beta\.ws\.radiance\.thatgamecompany\.com#$UPSTREAM_ADDR#g" \
   /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 nginx -t
 mkdir -p /data /var/lib/tailscale /var/run/tailscale /run/cloudflare-warp
+[ -e /data/sky.json ] || printf '[]\n' > /data/sky.json
+chmod 0600 /data/sky.json
 
 if [ -c /dev/net/tun ]; then
   # The Koyeb image does not include the sysctl command, but privileged
