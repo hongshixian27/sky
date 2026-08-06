@@ -17,6 +17,17 @@
         "type": "ws",
         "path": "/blog"
       }
+    },
+    {
+      "type": "vless",
+      "tag": "vless-tcp-in",
+      "listen": "0.0.0.0",
+      "listen_port": 8083,
+      "users": [
+        {
+          "uuid": "22222222-2222-2222-2222-222222222222"
+        }
+      ]
     }
   ],
   "outbounds": [
