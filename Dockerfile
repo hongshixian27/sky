@@ -50,7 +50,10 @@ COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
 COPY --from=bootstrap-builder /huawei-proxy /usr/local/bin/huawei-proxy
 COPY --from=bootstrap-builder /header-cache /usr/local/bin/header-cache
 COPY nginx.conf /etc/nginx/nginx.conf.template
-RUN cp /etc/nginx/nginx.conf.template /etc/nginx/nginx.conf && nginx -t
+RUN sed -e 's/__UPSTREAM_ADDR__/127.0.0.1/g' \
+        -e 's/__LIVE_UPSTREAM_ADDR__/127.0.0.1/g' \
+        /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf \
+    && nginx -t
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
 COPY tailscale-init.sh /usr/local/bin/tailscale-init.sh
