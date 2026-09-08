@@ -117,19 +117,34 @@ connect_warp() {
 }
 
 configure_tailscale_tcp() {
-  ip rule del fwmark 1 table 100 2>/dev/null || true
-  ip route flush table 100 2>/dev/null || true
-  ip rule add fwmark 1 table 100
-  ip route add local 0.0.0.0/0 dev lo table 100
+  ip -4 rule del fwmark 1 table 100 2>/dev/null || true
+  ip -4 route flush table 100 2>/dev/null || true
+  if ! ip -4 rule add fwmark 1 table 100 2>/dev/null; then
+    echo "[ROUTE] policy routing unavailable; skipping Tailscale TCP interception" >&2
+    return 0
+  fi
+  if ! ip -4 route add local 0.0.0.0/0 dev lo table 100 2>/dev/null; then
+    ip -4 rule del fwmark 1 table 100 2>/dev/null || true
+    echo "[ROUTE] local route unavailable; skipping Tailscale TCP interception" >&2
+    return 0
+  fi
 
   "$IPTABLES" -t mangle -D PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS 2>/dev/null || true
   "$IPTABLES" -t mangle -F KOYEB_TS_EGRESS 2>/dev/null || true
   "$IPTABLES" -t mangle -X KOYEB_TS_EGRESS 2>/dev/null || true
-  "$IPTABLES" -t mangle -N KOYEB_TS_EGRESS
-  "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -d 100.64.0.0/10 -j RETURN
-  "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -d 127.0.0.0/8 -j RETURN
-  "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1/1
-  "$IPTABLES" -t mangle -A PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS
+  if ! "$IPTABLES" -t mangle -N KOYEB_TS_EGRESS 2>/dev/null \
+    || ! "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -d 100.64.0.0/10 -j RETURN 2>/dev/null \
+    || ! "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -d 127.0.0.0/8 -j RETURN 2>/dev/null \
+    || ! "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1/1 2>/dev/null \
+    || ! "$IPTABLES" -t mangle -A PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS 2>/dev/null; then
+    "$IPTABLES" -t mangle -D PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS 2>/dev/null || true
+    "$IPTABLES" -t mangle -F KOYEB_TS_EGRESS 2>/dev/null || true
+    "$IPTABLES" -t mangle -X KOYEB_TS_EGRESS 2>/dev/null || true
+    ip -4 rule del fwmark 1 table 100 2>/dev/null || true
+    ip -4 route flush table 100 2>/dev/null || true
+    echo "[ROUTE] TPROXY unavailable; skipping Tailscale TCP interception" >&2
+    return 0
+  fi
   echo "[ROUTE] Tailscale TCP policy enabled; all UDP bypasses proxy"
 }
 
