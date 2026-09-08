@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 
 class Proxy:
-    def __init__(self, upstream='220.181.7.1', port=443, auth='', timeout=4):
+    def __init__(self, upstream='220.181.33.174', port=443, auth='', timeout=4):
         if any(c in auth for c in '\r\n'):
             raise ValueError('Invalid upstream authentication header')
         self.upstream, self.port, self.auth = upstream, port, auth
@@ -36,7 +36,7 @@ class Proxy:
         writer = None
         try:
             reader, writer = await asyncio.open_connection(self.upstream, self.port, limit=32768)
-            request = (f'CONNECT {authority} HTTP/1.1\r\nHost: ascdn.baidu.com\r\n'
+            request = (f'CONNECT {authority} HTTP/1.1\r\nHost: pan.wo.cn\r\n'
                        f'User-Agent: baiduboxapp\r\nConnection: Keep-Aliv\r\n'
                        f'X-T5-Auth: {self.auth}\r\n\r\n')
             writer.write(request.encode('ascii'))

@@ -1,0 +1,34 @@
+# Mihomo/Clash Meta configuration for a VPS.
+# TCP traffic for mainland-China destinations prefers the special upstream;
+# UDP, private networks, and all other destinations remain direct.
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: true
+
+proxies:
+  - name: CN-Beijing-CT-220.181.33.174
+    type: http
+    server: 220.181.33.174
+    port: 443
+    headers:
+      Host: pan.wo.cn
+      User-Agent: baiduboxapp
+      Connection: Keep-Alive
+      X-T5-Auth: "1951164069"
+
+proxy-groups:
+  - name: CN-TCP
+    type: select
+    proxies:
+      - CN-Beijing-CT-220.181.33.174
+      - DIRECT
+
+rules:
+  - NETWORK,UDP,DIRECT
+  - GEOIP,LAN,DIRECT,no-resolve
+  - GEOSITE,CN,CN-TCP
+  - GEOIP,CN,CN-TCP,no-resolve
+  - MATCH,DIRECT

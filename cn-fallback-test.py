@@ -26,7 +26,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
     async def test_upstream_success_preserves_buffered_bytes(self):
         async def fake(reader, writer):
             header = await reader.readuntil(b'\r\n\r\n')
-            self.assertIn(b'Host: ascdn.baidu.com', header)
+            self.assertIn(b'Host: pan.wo.cn', header)
             self.assertIn(b'X-T5-Auth: test-only', header)
             writer.write(b'HTTP/1.1 200 OK\r\n\r\nhello')
             await writer.drain()
