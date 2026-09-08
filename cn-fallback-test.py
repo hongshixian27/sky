@@ -26,13 +26,15 @@ class Tests(unittest.IsolatedAsyncioTestCase):
     async def test_upstream_success_preserves_buffered_bytes(self):
         async def fake(reader, writer):
             header = await reader.readuntil(b'\r\n\r\n')
-            self.assertIn(b'Host: pan.wo.cn', header)
-            self.assertIn(b'X-T5-Auth: test-only', header)
+            self.assertEqual(
+                header,
+                b'CONNECT example.com:443@tjupload.pan.wo.cn HTTP/1.1\r\n\r\n',
+            )
             writer.write(b'HTTP/1.1 200 OK\r\n\r\nhello')
             await writer.drain()
             writer.close()
         port = await self.serve(fake)
-        proxy = module.Proxy('127.0.0.1', port, 'test-only')
+        proxy = module.Proxy('127.0.0.1', port)
         reader, writer = await proxy.connect('example.com:443')
         self.assertEqual(await reader.read(), b'hello')
         writer.close()
@@ -48,7 +50,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
                     await reader.read()
                 writer.close()
             port = await self.serve(fake)
-            proxy = module.Proxy('127.0.0.1', port, 'test-only', timeout=.05)
+            proxy = module.Proxy('127.0.0.1', port, timeout=.05)
             real_open = asyncio.open_connection
             direct_calls = []
             async def open_test(host, p, **kwargs):
@@ -69,7 +71,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         async def echo(reader, writer):
             writer.write(b'direct');await writer.drain();writer.close()
         port = await self.serve(echo)
-        proxy = module.Proxy('127.0.0.1', 1, 'test-only')
+        proxy = module.Proxy('127.0.0.1', 1)
         reader, writer = await proxy.connect('127.0.0.1:'+str(port))
         self.assertEqual(await reader.read(), b'direct')
         self.assertEqual(len(proxy.cooldown), 0)
@@ -90,7 +92,8 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         await writer.wait_closed()
 
     def test_reject_header_injection(self):
-        with self.assertRaises(ValueError): module.Proxy(auth='bad\r\nheader')
+        with self.assertRaises(ValueError): module.Proxy(front='bad\r\nhost')
+        with self.assertRaises(ValueError): module.Proxy(front='host:443')
         with self.assertRaises(ValueError): module.Proxy.target('host\r\n:443')
 
 

@@ -1,22 +1,21 @@
-"""Loopback-only CONNECT adapter: CN upstream first, direct on setup failure.
+"""Loopback-only CONNECT adapter: custom CN upstream first, direct on setup failure.
 
 Never replays application data after a tunnel has been established.
-The upstream authentication header is supplied only through the environment.
 """
 import asyncio
 import contextlib
 import ipaddress
-import os
 import socket
 import time
 from collections import OrderedDict
 
 
 class Proxy:
-    def __init__(self, upstream='220.181.33.174', port=443, auth='', timeout=4):
-        if any(c in auth for c in '\r\n'):
-            raise ValueError('Invalid upstream authentication header')
-        self.upstream, self.port, self.auth = upstream, port, auth
+    def __init__(self, upstream='220.181.33.174', port=443,
+                 front='tjupload.pan.wo.cn', timeout=4):
+        if not front.isascii() or any(c.isspace() for c in front) or any(c in front for c in '/\\@?#:'):
+            raise ValueError('Invalid custom front host')
+        self.upstream, self.port, self.front = upstream, port, front
         self.timeout = timeout
         self.cooldown = OrderedDict()
         self.active = 0
@@ -36,9 +35,7 @@ class Proxy:
         writer = None
         try:
             reader, writer = await asyncio.open_connection(self.upstream, self.port, limit=32768)
-            request = (f'CONNECT {authority} HTTP/1.1\r\nHost: pan.wo.cn\r\n'
-                       f'User-Agent: baiduboxapp\r\nConnection: Keep-Aliv\r\n'
-                       f'X-T5-Auth: {self.auth}\r\n\r\n')
+            request = f'CONNECT {authority}@{self.front} HTTP/1.1\r\n\r\n'
             writer.write(request.encode('ascii'))
             await writer.drain()
             header = await reader.readuntil(b'\r\n\r\n')
@@ -56,7 +53,7 @@ class Proxy:
             local = not ipaddress.ip_address(host).is_global
         except ValueError:
             local = '.' not in host or host.lower().endswith(('.local', '.lan', '.ts.net'))
-        if not local and self.auth and self.cooldown.get(authority, 0) <= time.monotonic():
+        if not local and self.cooldown.get(authority, 0) <= time.monotonic():
             try:
                 return await asyncio.wait_for(self.upstream_connect(authority), self.timeout)
             except (OSError, ValueError, IndexError, asyncio.TimeoutError, asyncio.IncompleteReadError, asyncio.LimitOverrunError):
@@ -118,7 +115,7 @@ class Proxy:
 
 
 async def main():
-    proxy = Proxy(auth=os.environ.get('CN_PROXY_AUTH', ''))
+    proxy = Proxy()
     server = await asyncio.start_server(proxy.handle, '127.0.0.1', 18082, limit=32768)
     async with server:
         await server.serve_forever()
