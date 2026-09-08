@@ -43,6 +43,7 @@ RUN mkdir -p /app /etc/supervisor/conf.d /var/log \
 COPY config.json /app/config.json
 COPY cn-fallback.py /app/cn-fallback.py
 COPY cn-fallback-test.py /app/cn-fallback-test.py
+COPY proxy-pan-benchmark.py /app/proxy-pan-benchmark.py
 RUN python3 /app/cn-fallback-test.py
 RUN curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-cn.srs -o /app/geosite-cn.srs \
