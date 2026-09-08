@@ -102,13 +102,15 @@ connect_warp() {
   # The actual tunnel endpoints and subsequent user traffic do not stay on the
   # bootstrap node after WARP has been verified.
   if bootstrap_enable && configure_warp && wait_warp_connected; then
-    bootstrap_disable
-    select_warp
-    echo "[WARP] registered through VMess bootstrap; user TCP uses WARP"
-    return 0
+    if select_warp; then
+      echo "[WARP] distinct exit verified; WARP routing enabled"
+      bootstrap_disable
+      echo "[WARP] VMess bootstrap disconnected after WARP activation"
+      return 0
+    fi
   fi
 
-  echo "[WARP] VMess registration failed; disabling WARP and using direct fallback" >&2
+  echo "[WARP] VMess registration or exit verification failed; disabling WARP and using direct fallback" >&2
   bootstrap_disable
   warp-cli --accept-tos disconnect >/dev/null 2>&1 || true
   select_direct
