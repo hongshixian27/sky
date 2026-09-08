@@ -17,15 +17,86 @@
         "type": "ws",
         "path": "/blog"
       }
+    },
+    {
+      "type": "tproxy",
+      "tag": "tailscale-tcp",
+      "listen": "0.0.0.0",
+      "listen_port": 12345,
+      "network": "tcp",
+      "sniff": true,
+      "sniff_override_destination": true
+    },
+    {
+      "type": "redirect",
+      "tag": "warp-bootstrap",
+      "listen": "0.0.0.0",
+      "listen_port": 12347,
+      "sniff": true,
+      "sniff_override_destination": true
     }
   ],
   "outbounds": [
     {
+      "type": "http",
+      "tag": "cn-fallback",
+      "server": "127.0.0.1",
+      "server_port": 18082
+    },
+    {
       "type": "direct",
       "tag": "direct"
+    },
+    {
+      "type": "socks",
+      "tag": "warp",
+      "server": "127.0.0.1",
+      "server_port": 40000,
+      "version": "5"
+    },
+    {
+      "type": "selector",
+      "tag": "warp-or-direct",
+      "outbounds": ["warp", "direct"],
+      "default": "direct"
+    },
+    {
+      "type": "vmess",
+      "tag": "warp-bootstrap-vmess",
+      "server": "google.idkwhn.ccwu.cc",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "security": "auto",
+      "alter_id": 0,
+      "network": "tcp"
     }
   ],
   "route": {
+    "rules": [
+      { "inbound": ["warp-bootstrap"], "outbound": "warp-bootstrap-vmess" },
+      { "network": "udp", "outbound": "direct" },
+      { "ip_is_private": true, "outbound": "direct" },
+      { "domain_suffix": ["local", "lan", "ts.net"], "outbound": "direct" },
+      {
+        "inbound": ["tailscale-tcp"],
+        "domain_suffix": ["us", "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com", "googlevideo.com", "gmail.com", "youtube.com", "youtu.be", "ytimg.com", "youtube-nocookie.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "sora.com", "x.com", "twitter.com", "twimg.com", "facebook.com", "fbcdn.net", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "discordapp.net", "github.com", "githubusercontent.com", "microsoft.com", "live.com"],
+        "outbound": "warp-or-direct"
+      },
+      { "inbound": ["tailscale-tcp"], "rule_set": ["geoip-us"], "outbound": "warp-or-direct" },
+      { "inbound": ["tailscale-tcp"], "outbound": "direct" },
+      { "inbound": ["vless-in"], "domain_suffix": ["cn", "douyin.com", "douyincdn.com", "douyinpic.com", "douyinvod.com", "amemv.com", "snssdk.com", "toutiao.com", "byteimg.com", "bytecdn.cn", "bytedance.com", "bilibili.com", "biliapi.net", "biliapi.com", "bilivideo.com", "bilivideo.cn", "hdslb.com", "b23.tv", "163.com", "126.com", "netease.com", "music.126.net", "127.net", "qq.com", "qpic.cn", "qlogo.cn", "gtimg.com", "tencent.com", "weixin.com", "wechat.com", "weixin.qq.com", "tenpay.com", "myqcloud.com", "kuaishou.com", "gifshow.com", "kwai.com", "yximgs.com", "ksyuncdn.com", "weibo.com", "weibo.cn", "sina.com.cn", "xiaohongshu.com", "xhscdn.com", "zhihu.com", "zhimg.com", "baidu.com", "bdstatic.com", "bdimg.com", "icbc.com.cn", "ccb.com", "boc.cn", "abchina.com", "bankcomm.com", "cmbchina.com", "cmbc.com.cn", "cebbank.com", "cib.com.cn", "spdb.com.cn", "psbc.com", "pingan.com", "bank.ecitic.com", "alipay.com"], "outbound": "cn-fallback" },
+      { "inbound": ["vless-in"], "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "cn-fallback" }
+    ],
+    "rule_set": [
+      { "type": "local", "tag": "geosite-cn", "format": "binary", "path": "/app/geosite-cn.srs" },
+      { "type": "local", "tag": "geoip-cn", "format": "binary", "path": "/app/geoip-cn.srs" },
+      { "type": "local", "tag": "geoip-us", "format": "binary", "path": "/app/geoip-us.srs" }
+    ],
     "final": "direct"
+  },
+  "experimental": {
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090"
+    }
   }
 }

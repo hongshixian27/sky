@@ -20,6 +20,8 @@ tailscale up \
   --auth-key="$TS_AUTHKEY" \
   --hostname=koyeb \
   --accept-dns=false \
+  --netfilter-mode=on \
+  --snat-subnet-routes=true \
   --advertise-exit-node \
   --reset
 
