@@ -61,9 +61,18 @@ select_direct() {
 
 warp_verified() {
   warp-cli --accept-tos status 2>/dev/null | grep -qi connected || return 1
-  curl --fail --silent --show-error --max-time 15 \
+
+  # Cloudflare's trace endpoint can report warp=off when the Linux client is
+  # running in local proxy mode even though traffic exits through WARP.  Verify
+  # the usable SOCKS path and require its public IP to differ from Koyeb's
+  # direct public IP instead of relying on that flag.
+  direct_ip="$(curl -4 --fail --silent --show-error --max-time 10 \
+    https://api.ipify.org 2>/dev/null || true)"
+  warp_ip="$(curl -4 --fail --silent --show-error --max-time 15 \
     --socks5-hostname 127.0.0.1:40000 \
-    https://www.cloudflare.com/cdn-cgi/trace 2>/dev/null | grep -q '^warp=on$'
+    https://api.ipify.org 2>/dev/null || true)"
+  [ -n "$warp_ip" ] || return 1
+  [ -z "$direct_ip" ] || [ "$warp_ip" != "$direct_ip" ]
 }
 
 wait_warp_connected() {
@@ -78,32 +87,37 @@ wait_warp_connected() {
 
 configure_warp() {
   if ! warp-cli --accept-tos registration show >/dev/null 2>&1; then
-    timeout 30 warp-cli --accept-tos registration new || return 1
+    timeout 60 warp-cli --accept-tos registration new || return 1
   fi
   warp-cli --accept-tos tunnel protocol set MASQUE >/dev/null 2>&1 || true
   warp-cli --accept-tos mode proxy >/dev/null || return 1
   warp-cli --accept-tos proxy port 40000 >/dev/null || return 1
-  timeout 30 warp-cli --accept-tos connect >/dev/null || return 1
+  timeout 60 warp-cli --accept-tos connect >/dev/null || return 1
 }
 
 connect_warp() {
   select_direct
+  bootstrap_disable
+
+  # Direct registration works from Koyeb and avoids a failed bootstrap attempt
+  # leaving the daemon in a half-registered state.  Use the VMess bootstrap only
+  # as the second attempt when the Cloudflare control plane is unreachable.
+  if configure_warp && wait_warp_connected; then
+    select_warp
+    echo "[WARP] connected directly; user TCP uses WARP"
+    return 0
+  fi
+
+  echo "[WARP] direct control plane failed; retrying through VMess bootstrap" >&2
+  warp-cli --accept-tos disconnect >/dev/null 2>&1 || true
   if bootstrap_enable && configure_warp && wait_warp_connected; then
     bootstrap_disable
     select_warp
-    echo "[WARP] connected; VMess bootstrap removed and user traffic uses WARP"
+    echo "[WARP] connected through VMess bootstrap; user TCP uses WARP"
     return 0
   fi
 
-  echo "[WARP] VMess bootstrap failed; retrying control plane directly" >&2
   bootstrap_disable
-  warp-cli --accept-tos disconnect >/dev/null 2>&1 || true
-  if configure_warp && wait_warp_connected; then
-    select_warp
-    echo "[WARP] connected through direct fallback"
-    return 0
-  fi
-
   select_direct
   echo "[WARP] unavailable; overseas TCP falls back to Koyeb direct" >&2
   return 1
