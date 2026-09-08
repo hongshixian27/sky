@@ -48,6 +48,14 @@ RUN python3 /app/cn-fallback-test.py
 RUN curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-cn.srs -o /app/geosite-cn.srs \
     && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
+      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-google.srs -o /app/geosite-google.srs \
+    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
+      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-youtube.srs -o /app/geosite-youtube.srs \
+    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
+      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-category-social-media-!cn.srs -o /app/geosite-category-social-media-non-cn.srs \
+    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
+      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-category-ai-!cn.srs -o /app/geosite-category-ai-non-cn.srs \
+    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geoip/b9c5e675b4d5359d4b47f4434fa7ae77e9991306/geoip-cn.srs -o /app/geoip-cn.srs \
     && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geoip/b9c5e675b4d5359d4b47f4434fa7ae77e9991306/geoip-us.srs -o /app/geoip-us.srs \

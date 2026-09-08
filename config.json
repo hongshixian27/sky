@@ -78,8 +78,13 @@
       { "ip_is_private": true, "outbound": "direct" },
       { "domain_suffix": ["local", "lan", "ts.net"], "outbound": "direct" },
       {
-        "inbound": ["tailscale-tcp"],
-        "domain_suffix": ["us", "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com", "googlevideo.com", "gmail.com", "youtube.com", "youtu.be", "ytimg.com", "youtube-nocookie.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "sora.com", "x.com", "twitter.com", "twimg.com", "facebook.com", "fbcdn.net", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "discordapp.net", "github.com", "githubusercontent.com", "microsoft.com", "live.com"],
+        "inbound": ["tailscale-tcp", "vless-in"],
+        "domain_suffix": ["ip233.cn", "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com", "googlevideo.com", "gmail.com", "youtube.com", "youtu.be", "ytimg.com", "youtube-nocookie.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "sora.com", "anthropic.com", "claude.ai", "perplexity.ai", "x.ai", "x.com", "twitter.com", "twimg.com", "facebook.com", "fb.com", "fbcdn.net", "meta.com", "instagram.com", "cdninstagram.com", "threads.net", "whatsapp.com", "whatsapp.net", "telegram.org", "t.me", "discord.com", "discord.gg", "discordapp.com", "discordapp.net", "reddit.com", "redd.it", "redditmedia.com", "redditstatic.com", "tiktok.com", "tiktokcdn.com", "twitch.tv", "pinterest.com", "pinimg.com", "linkedin.com", "licdn.com", "snapchat.com", "sc-cdn.net"],
+        "outbound": "warp-or-direct"
+      },
+      {
+        "inbound": ["tailscale-tcp", "vless-in"],
+        "rule_set": ["geosite-google", "geosite-youtube", "geosite-social-media-non-cn", "geosite-ai-non-cn"],
         "outbound": "warp-or-direct"
       },
       { "inbound": ["tailscale-tcp"], "rule_set": ["geoip-us"], "outbound": "warp-or-direct" },
@@ -89,6 +94,10 @@
     ],
     "rule_set": [
       { "type": "local", "tag": "geosite-cn", "format": "binary", "path": "/app/geosite-cn.srs" },
+      { "type": "local", "tag": "geosite-google", "format": "binary", "path": "/app/geosite-google.srs" },
+      { "type": "local", "tag": "geosite-youtube", "format": "binary", "path": "/app/geosite-youtube.srs" },
+      { "type": "local", "tag": "geosite-social-media-non-cn", "format": "binary", "path": "/app/geosite-category-social-media-non-cn.srs" },
+      { "type": "local", "tag": "geosite-ai-non-cn", "format": "binary", "path": "/app/geosite-category-ai-non-cn.srs" },
       { "type": "local", "tag": "geoip-cn", "format": "binary", "path": "/app/geoip-cn.srs" },
       { "type": "local", "tag": "geoip-us", "format": "binary", "path": "/app/geoip-us.srs" }
     ],
