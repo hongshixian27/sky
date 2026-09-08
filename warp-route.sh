@@ -4,6 +4,7 @@ set -eu
 BOOTSTRAP_CHAIN="WARP_BOOTSTRAP"
 WARP_API_HOSTS="api.cloudflareclient.com api.devices.cloudflare.com zero-trust-client.cloudflareclient.com notifications.cloudflareclient.com"
 WARP_API_IPV4="162.159.137.105 162.159.138.105"
+IPTABLES="$(command -v iptables-legacy || command -v iptables)"
 
 wait_for() {
   label="$1"
@@ -20,14 +21,14 @@ wait_for() {
 }
 
 bootstrap_disable() {
-  iptables -t nat -D OUTPUT -p tcp --dport 443 -j "$BOOTSTRAP_CHAIN" 2>/dev/null || true
-  iptables -t nat -F "$BOOTSTRAP_CHAIN" 2>/dev/null || true
-  iptables -t nat -X "$BOOTSTRAP_CHAIN" 2>/dev/null || true
+  "$IPTABLES" -t nat -D OUTPUT -p tcp --dport 443 -j "$BOOTSTRAP_CHAIN" 2>/dev/null || true
+  "$IPTABLES" -t nat -F "$BOOTSTRAP_CHAIN" 2>/dev/null || true
+  "$IPTABLES" -t nat -X "$BOOTSTRAP_CHAIN" 2>/dev/null || true
 }
 
 bootstrap_enable() {
   bootstrap_disable
-  iptables -t nat -N "$BOOTSTRAP_CHAIN" || return 1
+  "$IPTABLES" -t nat -N "$BOOTSTRAP_CHAIN" || return 1
   addresses="$WARP_API_IPV4"
   for host in $WARP_API_HOSTS; do
     resolved="$(getent ahostsv4 "$host" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')"
@@ -36,12 +37,12 @@ bootstrap_enable() {
   for address in $addresses; do
     case "$address" in
       *.*.*.*)
-        iptables -t nat -A "$BOOTSTRAP_CHAIN" -d "$address/32" -j REDIRECT --to-ports 12347
+        "$IPTABLES" -t nat -A "$BOOTSTRAP_CHAIN" -d "$address/32" -j REDIRECT --to-ports 12347
         ;;
     esac
   done
-  iptables -t nat -A "$BOOTSTRAP_CHAIN" -j RETURN
-  iptables -t nat -A OUTPUT -p tcp --dport 443 -j "$BOOTSTRAP_CHAIN"
+  "$IPTABLES" -t nat -A "$BOOTSTRAP_CHAIN" -j RETURN
+  "$IPTABLES" -t nat -A OUTPUT -p tcp --dport 443 -j "$BOOTSTRAP_CHAIN"
   echo "[WARP] control-plane bootstrap uses VMess; tunnel endpoints remain direct"
 }
 
@@ -121,14 +122,14 @@ configure_tailscale_tcp() {
   ip rule add fwmark 1 table 100
   ip route add local 0.0.0.0/0 dev lo table 100
 
-  iptables -t mangle -D PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS 2>/dev/null || true
-  iptables -t mangle -F KOYEB_TS_EGRESS 2>/dev/null || true
-  iptables -t mangle -X KOYEB_TS_EGRESS 2>/dev/null || true
-  iptables -t mangle -N KOYEB_TS_EGRESS
-  iptables -t mangle -A KOYEB_TS_EGRESS -d 100.64.0.0/10 -j RETURN
-  iptables -t mangle -A KOYEB_TS_EGRESS -d 127.0.0.0/8 -j RETURN
-  iptables -t mangle -A KOYEB_TS_EGRESS -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1/1
-  iptables -t mangle -A PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS
+  "$IPTABLES" -t mangle -D PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS 2>/dev/null || true
+  "$IPTABLES" -t mangle -F KOYEB_TS_EGRESS 2>/dev/null || true
+  "$IPTABLES" -t mangle -X KOYEB_TS_EGRESS 2>/dev/null || true
+  "$IPTABLES" -t mangle -N KOYEB_TS_EGRESS
+  "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -d 100.64.0.0/10 -j RETURN
+  "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -d 127.0.0.0/8 -j RETURN
+  "$IPTABLES" -t mangle -A KOYEB_TS_EGRESS -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1/1
+  "$IPTABLES" -t mangle -A PREROUTING -i tailscale0 -p tcp -j KOYEB_TS_EGRESS
   echo "[ROUTE] Tailscale TCP policy enabled; all UDP bypasses proxy"
 }
 
