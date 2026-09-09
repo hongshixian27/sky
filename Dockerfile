@@ -49,6 +49,7 @@ RUN curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geoip/b9c5e675b4d5359d4b47f4434fa7ae77e9991306/geoip-cn.srs -o /app/geoip-cn.srs \
     && /usr/local/bin/sing-box check -c /app/config.json
 COPY alist-backup.enc /app/alist-backup.enc
+COPY alist-prepare.py /app/alist-prepare.py
 COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
 COPY --from=bootstrap-builder /huawei-proxy /usr/local/bin/huawei-proxy
 COPY --from=bootstrap-builder /header-cache /usr/local/bin/header-cache
@@ -65,6 +66,9 @@ COPY alist-init.sh /usr/local/bin/alist-init.sh
 RUN chmod 0755 /entrypoint.sh \
       /usr/local/bin/tailscale-init.sh \
       /usr/local/bin/alist-init.sh
+
+COPY alist-smoke.py /app/alist-smoke.py
+RUN python3 /app/alist-smoke.py
 
 EXPOSE 8080
 

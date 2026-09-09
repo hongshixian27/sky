@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	apiBase    = "http://127.0.0.1:5244/api"
+	apiBase    = "http://127.0.0.1:5244/alist/api"
 	backupFile = "/app/alist-backup.enc"
 )
 

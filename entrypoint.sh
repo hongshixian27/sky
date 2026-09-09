@@ -31,6 +31,9 @@ sed -e "s#__UPSTREAM_ADDR__#$UPSTREAM_ADDR#g" \
   /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 nginx -t
 mkdir -p /data /var/lib/tailscale /var/run/tailscale
+# Establish the external base path before AList or its restore client starts.
+export ALIST_SITE_URL=https://koyeb.idkwhn.ccwu.cc/alist
+python3 /app/alist-prepare.py /data/config.json
 if [ -n "${TS_STATE_B64:-}" ]; then
   printf '%s' "$TS_STATE_B64" | base64 -d > /var/lib/tailscale/tailscaled.state
   chmod 0600 /var/lib/tailscale/tailscaled.state
