@@ -60,6 +60,14 @@ select_direct() {
     http://127.0.0.1:9090/proxies/warp-or-direct >/dev/null 2>&1 || true
 }
 
+bootstrap_node_verified() {
+  node_ip="$(curl -4 --fail --silent --show-error --max-time 15 \
+    --socks5-hostname 127.0.0.1:12348 \
+    https://api.ipify.org 2>/dev/null || true)"
+  [ -n "$node_ip" ] || return 1
+  echo "[WARP] VMess bootstrap verified; exit ${node_ip}"
+}
+
 warp_verified() {
   warp-cli --accept-tos status 2>/dev/null | grep -qi connected || return 1
 
@@ -98,10 +106,11 @@ configure_warp() {
 
 connect_warp() {
   select_direct
+  warp-cli --accept-tos disconnect >/dev/null 2>&1 || true
   # Use the requested VMess node for WARP registration and control-plane setup.
   # The actual tunnel endpoints and subsequent user traffic do not stay on the
   # bootstrap node after WARP has been verified.
-  if bootstrap_enable && configure_warp && wait_warp_connected; then
+  if bootstrap_enable && bootstrap_node_verified && configure_warp && wait_warp_connected; then
     if select_warp; then
       echo "[WARP] distinct exit verified; WARP routing enabled"
       bootstrap_disable
@@ -157,6 +166,7 @@ cleanup() {
 trap cleanup INT TERM EXIT
 
 wait_for SING-BOX sh -c "ss -ltn | grep -q ':12347 '"
+wait_for SING-BOX-CHECK sh -c "ss -ltn | grep -q ':12348 '"
 wait_for TAILSCALE test -e /sys/class/net/tailscale0
 wait_for WARP warp-cli --accept-tos status
 configure_tailscale_tcp

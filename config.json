@@ -34,6 +34,12 @@
       "listen_port": 12347,
       "sniff": true,
       "sniff_override_destination": true
+    },
+    {
+      "type": "socks",
+      "tag": "warp-bootstrap-check",
+      "listen": "127.0.0.1",
+      "listen_port": 12348
     }
   ],
   "outbounds": [
@@ -74,6 +80,7 @@
   "route": {
     "rules": [
       { "inbound": ["warp-bootstrap"], "outbound": "warp-bootstrap-vmess" },
+      { "inbound": ["warp-bootstrap-check"], "outbound": "warp-bootstrap-vmess" },
       { "network": "udp", "outbound": "direct" },
       { "ip_is_private": true, "outbound": "direct" },
       { "domain_suffix": ["local", "lan", "ts.net"], "outbound": "direct" },
