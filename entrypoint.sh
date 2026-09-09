@@ -30,7 +30,7 @@ sed -e "s#__UPSTREAM_ADDR__#$UPSTREAM_ADDR#g" \
     -e "s#__LIVE_UPSTREAM_ADDR__#$LIVE_UPSTREAM_ADDR#g" \
   /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 nginx -t
-mkdir -p /data /var/lib/tailscale /var/run/tailscale /run/cloudflare-warp
+mkdir -p /data /var/lib/tailscale /var/run/tailscale
 if [ -n "${TS_STATE_B64:-}" ]; then
   printf '%s' "$TS_STATE_B64" | base64 -d > /var/lib/tailscale/tailscaled.state
   chmod 0600 /var/lib/tailscale/tailscaled.state

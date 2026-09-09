@@ -37,19 +37,6 @@
     {
       "type": "direct",
       "tag": "direct"
-    },
-    {
-      "type": "socks",
-      "tag": "warp",
-      "server": "127.0.0.1",
-      "server_port": 40000,
-      "version": "5"
-    },
-    {
-      "type": "selector",
-      "tag": "warp-or-direct",
-      "outbounds": ["warp", "direct"],
-      "default": "direct"
     }
   ],
   "route": {
@@ -67,35 +54,14 @@
         "rule_set": ["geosite-ai-non-cn"],
         "outbound": "direct"
       },
-      {
-        "inbound": ["tailscale-tcp", "vless-in"],
-        "ip_version": 6,
-        "network": "tcp",
-        "outbound": "warp-or-direct"
-      },
-      {
-        "inbound": ["tailscale-tcp", "vless-in"],
-        "domain_suffix": ["ip233.cn", "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com", "googlevideo.com", "gmail.com", "youtube.com", "youtu.be", "ytimg.com", "youtube-nocookie.com", "x.com", "twitter.com", "twimg.com", "facebook.com", "fb.com", "fbcdn.net", "meta.com", "instagram.com", "cdninstagram.com", "threads.net", "whatsapp.com", "whatsapp.net", "telegram.org", "t.me", "discord.com", "discord.gg", "discordapp.com", "discordapp.net", "reddit.com", "redd.it", "redditmedia.com", "redditstatic.com", "tiktok.com", "tiktokcdn.com", "twitch.tv", "pinterest.com", "pinimg.com", "linkedin.com", "licdn.com", "snapchat.com", "sc-cdn.net"],
-        "outbound": "warp-or-direct"
-      },
-      {
-        "inbound": ["tailscale-tcp", "vless-in"],
-        "rule_set": ["geosite-google", "geosite-youtube", "geosite-social-media-non-cn"],
-        "outbound": "warp-or-direct"
-      },
-      { "inbound": ["tailscale-tcp"], "rule_set": ["geoip-us"], "outbound": "warp-or-direct" },
       { "inbound": ["vless-in"], "domain_suffix": ["cn", "douyin.com", "douyincdn.com", "douyinpic.com", "douyinvod.com", "amemv.com", "snssdk.com", "toutiao.com", "byteimg.com", "bytecdn.cn", "bytedance.com", "bilibili.com", "biliapi.net", "biliapi.com", "bilivideo.com", "bilivideo.cn", "hdslb.com", "b23.tv", "163.com", "126.com", "netease.com", "music.126.net", "127.net", "qq.com", "qpic.cn", "qlogo.cn", "gtimg.com", "tencent.com", "weixin.com", "wechat.com", "weixin.qq.com", "tenpay.com", "myqcloud.com", "kuaishou.com", "gifshow.com", "kwai.com", "yximgs.com", "ksyuncdn.com", "weibo.com", "weibo.cn", "sina.com.cn", "xiaohongshu.com", "xhscdn.com", "zhihu.com", "zhimg.com", "baidu.com", "bdstatic.com", "bdimg.com", "icbc.com.cn", "ccb.com", "boc.cn", "abchina.com", "bankcomm.com", "cmbchina.com", "cmbc.com.cn", "cebbank.com", "cib.com.cn", "spdb.com.cn", "psbc.com", "pingan.com", "bank.ecitic.com", "alipay.com"], "outbound": "cn-fallback" },
       { "inbound": ["vless-in"], "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "cn-fallback" },
-      { "inbound": ["tailscale-tcp", "vless-in"], "network": "tcp", "outbound": "warp-or-direct" }
+      { "inbound": ["tailscale-tcp", "vless-in"], "network": "tcp", "outbound": "direct" }
     ],
     "rule_set": [
       { "type": "local", "tag": "geosite-cn", "format": "binary", "path": "/app/geosite-cn.srs" },
-      { "type": "local", "tag": "geosite-google", "format": "binary", "path": "/app/geosite-google.srs" },
-      { "type": "local", "tag": "geosite-youtube", "format": "binary", "path": "/app/geosite-youtube.srs" },
-      { "type": "local", "tag": "geosite-social-media-non-cn", "format": "binary", "path": "/app/geosite-category-social-media-non-cn.srs" },
       { "type": "local", "tag": "geosite-ai-non-cn", "format": "binary", "path": "/app/geosite-category-ai-non-cn.srs" },
-      { "type": "local", "tag": "geoip-cn", "format": "binary", "path": "/app/geoip-cn.srs" },
-      { "type": "local", "tag": "geoip-us", "format": "binary", "path": "/app/geoip-us.srs" }
+      { "type": "local", "tag": "geoip-cn", "format": "binary", "path": "/app/geoip-cn.srs" }
     ],
     "final": "direct"
   },

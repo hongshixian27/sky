@@ -13,17 +13,13 @@ FROM debian:bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl gnupg gzip nginx supervisor python3 iproute2 iptables \
-    && curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
-      | gpg --dearmor --yes -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ bookworm main" \
-      > /etc/apt/sources.list.d/cloudflare-client.list \
+      ca-certificates curl gzip nginx supervisor python3 iproute2 iptables \
     && curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg \
       > /usr/share/keyrings/tailscale-archive-keyring.gpg \
     && curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list \
       > /etc/apt/sources.list.d/tailscale.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends tailscale cloudflare-warp \
+    && apt-get install -y --no-install-recommends tailscale \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz \
@@ -48,17 +44,9 @@ RUN python3 /app/cn-fallback-test.py
 RUN curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-cn.srs -o /app/geosite-cn.srs \
     && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
-      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-google.srs -o /app/geosite-google.srs \
-    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
-      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-youtube.srs -o /app/geosite-youtube.srs \
-    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
-      https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-category-social-media-!cn.srs -o /app/geosite-category-social-media-non-cn.srs \
-    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geosite/5a5a9abc760d2653948c9549c4cb56cc3279e1aa/geosite-category-ai-!cn.srs -o /app/geosite-category-ai-non-cn.srs \
     && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
       https://raw.githubusercontent.com/SagerNet/sing-geoip/b9c5e675b4d5359d4b47f4434fa7ae77e9991306/geoip-cn.srs -o /app/geoip-cn.srs \
-    && curl -fSL --retry 3 --connect-timeout 15 --max-time 90 \
-      https://raw.githubusercontent.com/SagerNet/sing-geoip/b9c5e675b4d5359d4b47f4434fa7ae77e9991306/geoip-us.srs -o /app/geoip-us.srs \
     && /usr/local/bin/sing-box check -c /app/config.json
 COPY alist-backup.enc /app/alist-backup.enc
 COPY --from=bootstrap-builder /alist-bootstrap /usr/local/bin/alist-bootstrap
@@ -73,12 +61,10 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
 COPY tailscale-init.sh /usr/local/bin/tailscale-init.sh
 COPY alist-init.sh /usr/local/bin/alist-init.sh
-COPY warp-route.sh /usr/local/bin/warp-route.sh
 
 RUN chmod 0755 /entrypoint.sh \
       /usr/local/bin/tailscale-init.sh \
-      /usr/local/bin/alist-init.sh \
-      /usr/local/bin/warp-route.sh
+      /usr/local/bin/alist-init.sh
 
 EXPOSE 8080
 
