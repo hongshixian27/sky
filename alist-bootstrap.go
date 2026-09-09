@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,7 @@ import (
 const (
 	apiBase    = "http://127.0.0.1:5244/alist/api"
 	backupFile = "/app/alist-backup.enc"
+	backupSHA256 = "51a903e4930fa7fefe977f081bb155a236c0fd8a8b1422b64318695436d5ec2c"
 )
 
 type backup struct {
@@ -54,6 +56,9 @@ func main() {
 		fatal(fmt.Errorf("decrypt backup: %w", err))
 	}
 	defer clear(plain)
+	if fmt.Sprintf("%x", sha256.Sum256(plain)) != backupSHA256 {
+		fatal(errors.New("decrypted backup does not match the fixed 2026-09-10 03:38:37 export"))
+	}
 
 	var b backup
 	if err := json.Unmarshal(plain, &b); err != nil {
@@ -67,6 +72,7 @@ func main() {
 	if err := c.restore(&b); err != nil {
 		fatal(err)
 	}
+	fmt.Printf("[ALIST] fixed backup 2026-09-10 03:38:37 restored: %d storages, %d settings, %d users\n", len(b.Storages), len(b.Settings), len(b.Users))
 }
 
 func decryptBackup(keyText string) ([]byte, error) {
