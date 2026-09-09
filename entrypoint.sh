@@ -38,11 +38,9 @@ fi
 [ -e /data/sky.json ] || printf '[]\n' > /data/sky.json
 chmod 0600 /data/sky.json
 
-if [ -c /dev/net/tun ]; then
-  # The Koyeb image does not include the sysctl command, but privileged
-  # instances expose these writable kernel switches directly.
-  [ ! -w /proc/sys/net/ipv4/ip_forward ] || printf '1\n' > /proc/sys/net/ipv4/ip_forward
-  [ ! -w /proc/sys/net/ipv6/conf/all/forwarding ] || printf '1\n' > /proc/sys/net/ipv6/conf/all/forwarding
-fi
+# Exit-node forwarding is required in kernel mode.  Koyeb exposes these
+# switches directly even though the slim image does not include sysctl.
+[ ! -w /proc/sys/net/ipv4/ip_forward ] || printf '1\n' > /proc/sys/net/ipv4/ip_forward
+[ ! -w /proc/sys/net/ipv6/conf/all/forwarding ] || printf '1\n' > /proc/sys/net/ipv6/conf/all/forwarding
 
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

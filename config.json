@@ -19,27 +19,12 @@
       }
     },
     {
-      "type": "tproxy",
-      "tag": "tailscale-tcp",
-      "listen": "0.0.0.0",
-      "listen_port": 12345,
-      "network": "tcp",
-      "sniff": true,
-      "sniff_override_destination": true
-    },
-    {
       "type": "redirect",
-      "tag": "warp-bootstrap",
-      "listen": "0.0.0.0",
-      "listen_port": 12347,
+      "tag": "tailscale-tcp",
+      "listen": "::",
+      "listen_port": 12345,
       "sniff": true,
       "sniff_override_destination": true
-    },
-    {
-      "type": "socks",
-      "tag": "warp-bootstrap-check",
-      "listen": "127.0.0.1",
-      "listen_port": 12348
     }
   ],
   "outbounds": [
@@ -65,22 +50,10 @@
       "tag": "warp-or-direct",
       "outbounds": ["warp", "direct"],
       "default": "direct"
-    },
-    {
-      "type": "vmess",
-      "tag": "warp-bootstrap-vmess",
-      "server": "google.idkwhn.ccwu.cc",
-      "server_port": 443,
-      "uuid": "00000000-0000-0000-0000-000000000000",
-      "security": "auto",
-      "alter_id": 0,
-      "network": "tcp"
     }
   ],
   "route": {
     "rules": [
-      { "inbound": ["warp-bootstrap"], "outbound": "warp-bootstrap-vmess" },
-      { "inbound": ["warp-bootstrap-check"], "outbound": "warp-bootstrap-vmess" },
       { "network": "udp", "outbound": "direct" },
       { "ip_is_private": true, "outbound": "direct" },
       { "domain_suffix": ["local", "lan", "ts.net"], "outbound": "direct" },
@@ -93,6 +66,12 @@
         "inbound": ["tailscale-tcp", "vless-in"],
         "rule_set": ["geosite-ai-non-cn"],
         "outbound": "direct"
+      },
+      {
+        "inbound": ["tailscale-tcp", "vless-in"],
+        "ip_version": 6,
+        "network": "tcp",
+        "outbound": "warp-or-direct"
       },
       {
         "inbound": ["tailscale-tcp", "vless-in"],
