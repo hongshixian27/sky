@@ -19,7 +19,6 @@ import (
 const (
 	apiBase    = "http://127.0.0.1:5244/api"
 	backupFile = "/app/alist-backup.enc"
-	markerFile = "/data/.alist-backup-restored-v1"
 )
 
 type backup struct {
@@ -44,10 +43,6 @@ type client struct {
 }
 
 func main() {
-	if _, err := os.Stat(markerFile); err == nil {
-		return
-	}
-
 	keyText := os.Getenv("ALIST_BACKUP_KEY")
 	password := os.Getenv("ALIST_ADMIN_PASSWORD")
 	if keyText == "" || password == "" {
@@ -71,9 +66,6 @@ func main() {
 	}
 	if err := c.restore(&b); err != nil {
 		fatal(err)
-	}
-	if err := os.WriteFile(markerFile, []byte("restored\n"), 0600); err != nil {
-		fatal(fmt.Errorf("write restore marker: %w", err))
 	}
 }
 

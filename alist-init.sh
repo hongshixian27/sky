@@ -2,6 +2,12 @@
 set -eu
 
 if [ -z "${ALIST_ADMIN_PASSWORD:-}" ]; then
+  echo "[ALIST] ALIST_ADMIN_PASSWORD is missing" >&2
+  exit 1
+fi
+
+if [ -z "${ALIST_BACKUP_KEY:-}" ]; then
+  echo "[ALIST] ALIST_BACKUP_KEY is missing" >&2
   exit 1
 fi
 
@@ -19,13 +25,12 @@ done
 cd /opt/alist
 /opt/alist/alist admin set "$ALIST_ADMIN_PASSWORD" >/dev/null
 
-restore_rc=0
-if [ -n "${ALIST_BACKUP_KEY:-}" ]; then
-  /usr/local/bin/alist-bootstrap || restore_rc=$?
-  # The exported backup intentionally contains no passwords. Force the
-  # administrator password from Koyeb Secret after every restore and restart.
-  /opt/alist/alist admin set "$ALIST_ADMIN_PASSWORD" >/dev/null
-fi
+# The encrypted backup is built into the image.  Always reconcile it on every
+# container start; do not trust an ephemeral /data marker on Koyeb.
+/usr/local/bin/alist-bootstrap
+# The exported backup intentionally contains no passwords. Force the
+# administrator password from Koyeb Secret after every restore and restart.
+/opt/alist/alist admin set "$ALIST_ADMIN_PASSWORD" >/dev/null
 
 # AList needs its own base URL in order to generate correct asset, API, and
 # locally proxied download links when it is served from /alist/.
@@ -44,4 +49,4 @@ if [ "$config_changed" -eq 1 ]; then
   fi
 fi
 
-exit "$restore_rc"
+exit 0
